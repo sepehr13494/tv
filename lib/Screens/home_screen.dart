@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> checkCode() async {
     var response = await Dio().post("https://zaltv.co/wp-json/user/status",data: {
-      "code" : _controller.text
+      "code" : "1688917062"
     });
     print(response.toString());
     final activeCodeObj = activeCodeObjFromJson(response.toString());
