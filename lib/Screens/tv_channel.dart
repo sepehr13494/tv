@@ -1,4 +1,3 @@
-import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -95,7 +94,7 @@ class _TvChannelState extends State<TvChannel> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: m3u == null ? Center(child: CircularProgressIndicator.adaptive()) : Stack(
+      body: m3u == null ? Center(child: CircularProgressIndicator()) : Stack(
         children: [
           Center(
             child: GestureDetector(
@@ -133,7 +132,7 @@ class _TvChannelState extends State<TvChannel> {
                     aspectRatio: _controller.value.aspectRatio,
                     child: VideoPlayer(_controller),
                   )
-                      : Center(child: CircularProgressIndicator.adaptive()),
+                      : Center(child: CircularProgressIndicator()),
                 ),
           ),
           !showMenu ? Container() : Align(
