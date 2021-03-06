@@ -1,11 +1,15 @@
+import 'dart:convert';
 import 'dart:developer';
-
+import 'package:intl/intl.dart';
+import 'package:tv/models/tvobject.dart';
+import 'package:tv/models/tvDetails.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:xml/xml.dart';
+import 'package:xml2json/xml2json.dart';
+//import 'package:http/http.dart';
 
 class TvCalender extends StatefulWidget {
-
   final String link;
 
   const TvCalender({Key key, this.link}) : super(key: key);
@@ -15,18 +19,20 @@ class TvCalender extends StatefulWidget {
 }
 
 class _TvCalenderState extends State<TvCalender> {
-  List<String> litems = [
-    "channel1",
-    "channel2",
-    "channel3",
-    "channel4",
-    'channel5',
-    'channel6'
-  ];
+  TvObject tvObject;
+  List<TvDetails> tvProgramDetailsList=[];
+  List<String> litems = [];
+  String programsViewDate=DateFormat('yyyyMMdd').format(DateTime.now());
+
+
 
   @override
   void initState() {
-    //_function();
+    //print(DateTime.parse("20210305013500 +0000"));
+    print("dsds");
+    fetchUrl();
+    result(tvObject);
+    _function();
     super.initState();
   }
 
@@ -58,96 +64,110 @@ class _TvCalenderState extends State<TvCalender> {
                 height: 150,
                 width: double.maxFinite,
               ),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Column(
+              ListView.builder(
+                  physics: NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  itemCount: tvProgramDetailsList.length,
+                  itemBuilder: (BuildContext ctxt, int index) {
+                    return Row(
                       children: [
-                        ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: litems.length,
-                            itemBuilder: (BuildContext ctxt, int index) {
-                              return Container(
-                                alignment: Alignment.center,
-                                margin: EdgeInsets.all(2),
-                                height: 50,
-                                color: Colors.grey.withOpacity(0.3),
-                                child: Text(
-                                  litems[index],
-                                  style: TextStyle(color: Colors.white),
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                                  padding: EdgeInsets.all(4),
+                                  alignment: Alignment.center,
+                                  margin: EdgeInsets.all(2),
+                                  height: 70,
+                                  color: Colors.grey.withOpacity(0.3),
+                                         child: Row(
+                                           children: [
+                                             Container(
+                                               child: Text(
+                                                 tvProgramDetailsList[index].channel.displayName.t,
+                                                 style: TextStyle(color: Colors.white),
+                                               ),
+                                             ),
+                                             Container(),
+                                           ],
+                                     ),
                                 ),
-                              );
-                            })
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 4,
-                    child: Column(
-                      children: [
-                        ListView.builder(
-                          physics: NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount: litems.length,
-                            itemBuilder: (BuildContext ctxt, int index) {
-                              return Container(
-                                alignment: Alignment.center,
-                                margin: EdgeInsets.all(2),
-                                height: 50,
-                                color: Colors.transparent,
-                                child: Container(
-                                  height: 50,
-                                  child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      shrinkWrap: true,
-                                      itemCount: litems.length,
-                                      itemBuilder:
-                                          (BuildContext ctxt, int index) {
-                                        return Container(
-                                          margin: EdgeInsets.all((2)),
-                                          alignment: Alignment.center,
-                                          width: 150,
-                                          height: 60,
-                                          color: Colors.black.withOpacity(0.5),
-                                          child: Column(
+                        ),
+                        Expanded(
+                          flex: 4,
+                          child: Container(
+                            alignment: Alignment.center,
+                            margin: EdgeInsets.all(2),
+                            height: 70,
+                            color: Colors.transparent,
+                            child: Container(
+                              height: 70,
+                              child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  shrinkWrap: true,
+                                  itemCount:tvProgramDetailsList[index].programms.length,
+                                  itemBuilder:
+                                      (BuildContext ctxt, int index2) {
+                                    return Container(
+                                      margin: EdgeInsets.all((2)),
+                                      alignment: Alignment.center,
+                                      width: 150,
+                                      height: 60,
+                                      color: Colors.black.withOpacity(0.5),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                            MainAxisAlignment
+                                                .spaceBetween,
                                             children: [
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Container(
-                                                      margin:EdgeInsets.all(5),
-                                                      child: Text('1:00',style: TextStyle(color: Colors.white),)),
-                                                  Container(
-                                                    margin:EdgeInsets.all(5),
-                                                    child:Text('2:00',style: TextStyle(color: Colors.white),)
-                                                  ), ],
-                                              ),
-                                          Container(
-                                          //  padding:EdgeInsets.only(bottom: 5),
-                                            child:  Text(
-                                                litems[index],
-                                                style: TextStyle(
-                                                    color: Colors.white),
-                                                textAlign: TextAlign.center,
-                                                textDirection:
-                                                    TextDirection.ltr,
-                                              ),)
-                                            ],
+                                              Container(
+                                                  child: Row(
+                                                    children: [
+                                                      Container(
+                                                         margin:EdgeInsets.all(3),
+                                                          child: Text(tvProgramDetailsList[index].programms[index2].start.substring(8,10),style: TextStyle(color: Colors.white),)),
+                                                      Container(child: Text(":"),),
+                                                      Container(
+                                                          margin:EdgeInsets.all(3),
+                                                          child: Text(tvProgramDetailsList[index].programms[index2].start.substring(10,12),style: TextStyle(color: Colors.white),)),
+                                                    ],
+                                                  ),),
+                                              Container(
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                        margin:EdgeInsets.all(3),
+                                                        child: Text(tvProgramDetailsList[index].programms[index2].stop.substring(8,10),style: TextStyle(color: Colors.white),)),
+                                                    Container(child: Text(":"),),
+                                                    Container(
+                                                        margin:EdgeInsets.all(3),
+                                                        child: Text(tvProgramDetailsList[index].programms[index2].stop.substring(10,12),style: TextStyle(color: Colors.white),)),
+                                                  ],
+                                                ),),
+                                               ],
                                           ),
-                                        );
-                                      }),
-                                ),
-                              );
-                            })
+                                          Container(
+                                            margin:EdgeInsets.all(3),
+                                            child:  Text(
+                                              tvProgramDetailsList[index].programms[index2].title.t,
+                                              style: TextStyle(
+                                                  color: Colors.white),
+                                              textAlign: TextAlign.center,
+                                              // textDirection:
+                                              // TextDirection.ltr,
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                            ),
+                          ),
+                        )
                       ],
-                    ),
-                  )
-                ],
-              )
+                    );
+                  })
             ],
           ),
         ),
@@ -163,5 +183,159 @@ class _TvCalenderState extends State<TvCalender> {
     print("\n");
     final total = document.findAllElements('channel');
     print(total.first.name);
+  }
+
+  List<TvDetails> result(TvObject tvObject){
+    for(var ch in tvObject.tv.channel){
+      tvProgramDetailsList.add(TvDetails(channel: ch,programms: []));
+      for(var pr in tvObject.tv.programme){
+          //if(ch.id==pr.channel && programsViewDate==pr.start.substring(0,8)){
+          if(ch.id==pr.channel ){
+          tvProgramDetailsList.last.programms.add(pr);
+        }
+        else {
+        }
+      }
+    }
+  }
+
+  void fetchUrl() async{
+    final Xml2Json xml2Json = Xml2Json();
+    var xmlString1 = '''<tv generator-info-name="More-TV" generator-info-url="http://client.more-itv.com:8080/">
+    <channel id="zdfinfo.de">
+<display-name>### ۩ Bein Sports ۩ ### </display-name>
+</channel>
+<channel id="zdfinfo.de2">
+<display-name>SPORT AR: Bein Sport USA HD</display-name>
+</channel>
+<channel id="zdfinfo.de3">
+<display-name>SPORT TR: Bein Sports 1 TR HD</display-name>
+<icon src="https://static.epg.best/tr/beINSports1.tr.png"/>
+</channel>
+<channel id="zdfinfo.de4">
+<display-name>SPORT TR: Bein Sports 2 TR HD</display-name>
+<icon src="https://static.epg.best/tr/beINSports2.tr.png"/>
+</channel>
+<channel id="zdfinfo.de5">
+<display-name>SPORT TR: Bein Sports 3 TR HD</display-name>
+<icon src="https://static.epg.best/tr/beINSports3.tr.png"/>
+</channel>
+<programme start="20210306082500 +0000" stop="20210306083300 +0000" channel="zdfinfo.de">
+<title>Inui</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306083300 +0000" stop="20210306093300 +0000" channel="zdfinfo.de">
+<title>Inui</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306093300 +0000" stop="20210306103000 +0000" channel="zdfinfo.de">
+<title>Inui</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306103000 +0000" stop="20210306113300 +0000" channel="zdfinfo.de">
+<title>Inui</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+
+<programme start="20210306082500 +0000" stop="20210306083300 +0000" channel="zdfinfo.de2">
+<title>Inui2</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306083300 +0000" stop="20210306093300 +0000" channel="zdfinfo.de2">
+<title>Inui2</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306093300 +0000" stop="20210306103000 +0000" channel="zdfinfo.de2">
+<title>Inui2</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306103000 +0000" stop="20210306113300 +0000" channel="zdfinfo.de2">
+<title>Inui2</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+
+<programme start="20210306082500 +0000" stop="20210306083300 +0000" channel="zdfinfo.de3">
+<title>Inui3</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306083300 +0000" stop="20210306093300 +0000" channel="zdfinfo.de3">
+<title>Inui3</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306093300 +0000" stop="20210306103000 +0000" channel="zdfinfo.de3">
+<title>Inui3</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306103000 +0000" stop="20210306113300 +0000" channel="zdfinfo.de3">
+<title>Inui3</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+
+<programme start="20210306082500 +0000" stop="20210306083300 +0000" channel="zdfinfo.de4">
+<title>Inui4</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306083300 +0000" stop="20210306093300 +0000" channel="zdfinfo.de4">
+<title>Inui4</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306093300 +0000" stop="20210306103000 +0000" channel="zdfinfo.de4">
+<title>Inui4</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306103000 +0000" stop="20210306113300 +0000" channel="zdfinfo.de4">
+<title>Inui4</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+
+<programme start="20210306082500 +0000" stop="20210306083300 +0000" channel="zdfinfo.de5">
+<title>Inui5</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306083300 +0000" stop="20210306093300 +0000" channel="zdfinfo.de5">
+<title>Inui5</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306093300 +0000" stop="20210306103000 +0000" channel="zdfinfo.de5">
+<title>Inui5</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306103000 +0000" stop="20210306113300 +0000" channel="zdfinfo.de5">
+<title>Inui5</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+
+<programme start="20210306082500 +0000" stop="20210306083300 +0000" channel="zdfinfo.de6">
+<title>Inui6</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306083300 +0000" stop="20210306093300 +0000" channel="zdfinfo.de6">
+<title>Inui6</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306093300 +0000" stop="20210306103000 +0000" channel="zdfinfo.de6">
+<title>Inui6</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+<programme start="20210306103000 +0000" stop="20210306113300 +0000" channel="zdfinfo.de6">
+<title>Inui6</title>
+<desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
+</programme>
+    </tv>''';
+     //final xmlString = await http.get("http://zaltv.ddnsco.com:8080/xmltv.php?username=mene77&password=foiksiota");
+     //xml2Json.parse(utf8.decode(xmlString.bodyBytes));
+    xml2Json.parse(xmlString1);
+    var jsonString = xml2Json.toGData();
+    tvObject = tvObjectFromJson(jsonString);
+    print(tvObject.tv.channel[0].icon.src);
+    for(var i in tvObject.tv.channel){
+      List<String> displayNameList=[];
+      int count=0;
+      //displayNameList.add(i.displayName.t);
+      log(displayNameList[count]);
+      count++;
+    }
+    // just for setting icon
+
   }
 }

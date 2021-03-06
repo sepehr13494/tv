@@ -35,6 +35,10 @@ dependencies:
   dio: ^3.0.10
   toast: ^0.1.5
   xml: ^4.5.1
+  shared_preferences: ^2.0.3
+  xml2json: ^4.4.0
+  http: ^0.12.2
+  intl: ^0.16.1
 
 dev_dependencies:
   flutter_test:

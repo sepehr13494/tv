@@ -1,11 +1,15 @@
+import 'dart:convert';
+
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:m3u/m3u.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toast/toast.dart';
 import 'package:tv/Screens/setting_screen.dart';
 import 'package:tv/Screens/tvCalender.dart';
+import 'package:tv/models/MyM3uGenericEntry.dart';
 import 'package:tv/models/topChannelModel.dart';
 import 'package:video_player/video_player.dart';
 
@@ -41,8 +45,20 @@ class _TvChannelState extends State<TvChannel> {
   Future getChannels() async {
     final response = await Dio().get(widget.url);
     m3u = await M3uParser.parse(response.data);
+    List<M3uGenericEntry> favorites = [];
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<MyM3UGenericEntry> entries = [];
+    for (var entry in jsonDecode(prefs.getString("favorites") ?? [])) {
+      entries.add(MyM3UGenericEntry.fromJson(entry));
+    }
+    for (var entry in entries) {
+      favorites.add(
+          M3uGenericEntry(title: entry.title, link: entry.link, attributes: {
+        "tvg-logo": entry.logo,
+      }));
+    }
     topChannels = [
-      TopChannel(name: "favorite", m3uGenericEntries: []),
+      TopChannel(name: "favorite", m3uGenericEntries: favorites),
       TopChannel(name: "AllChannels", m3uGenericEntries: m3u)
     ];
     m3u.forEach((element) {
@@ -201,7 +217,7 @@ class _TvChannelState extends State<TvChannel> {
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.4,
                       height: MediaQuery.of(context).size.height,
-                      padding: EdgeInsets.only(top: 70),
+                      padding: EdgeInsets.only(top: 80),
                       color: Colors.grey[900].withOpacity(0.8),
                       child: Column(
                         children: [
@@ -300,7 +316,7 @@ class _TvChannelState extends State<TvChannel> {
           textDirection: TextDirection.ltr,
           children: [
             Container(
-              child: Text(index.toString()),
+              child: Text((index + 1).toString()),
             ),
             Padding(
               padding: EdgeInsets.only(left: 5),
@@ -330,41 +346,39 @@ class _TvChannelState extends State<TvChannel> {
 
   Widget rightDrawer() {
     return Column(
-      children: List.generate(5, (index) {
+      children: List.generate(3, (index) {
+        List<String> options = [
+          "Change Category",
+          "Code Management",
+          "TV Guid"
+        ];
+        List<IconData> icons = [
+          Icons.category,
+          Icons.account_tree_outlined,
+          Icons.list_alt
+        ];
         return GestureDetector(
           onTap: () {
-            List<String> filters = ["all", "movie", "series", "live"];
-            showDialog(
-                context: context,
-                builder: (context) {
-                  return Dialog(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: List.generate(filters.length, (index) {
-                          return Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
-                                _setFilter(filters[index]);
-                              },
-                              child: Text(filters[index]),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                  );
-                });
+            switch (index) {
+              case 0:
+                changeCategory();
+                break;
+              case 1:
+                break;
+              case 2:
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => TvCalender(link: widget.xml)));
+                break;
+            }
           },
           child: ListTile(
             title: Text(
-              "Setting",
+              options[index],
               style: TextStyle(color: Colors.white),
             ),
-            leading: Icon(Icons.ac_unit),
+            leading: Icon(icons[index]),
           ),
         );
       }),
@@ -372,10 +386,9 @@ class _TvChannelState extends State<TvChannel> {
   }
 
   Widget buttomController() {
-    M3uGenericEntry channel = m3u[channelIndex];
+    M3uGenericEntry channel = filteredLeftChannels[channelIndex];
     bool hasLength =
-        (filteredLeftChannels[channelIndex].link.contains("/movie/") ||
-            filteredLeftChannels[channelIndex].link.contains("/series/"));
+        (channel.link.contains("/movie/") || channel.link.contains("/series/"));
     return Container(
       color: Colors.black45,
       padding: EdgeInsets.all(15),
@@ -422,17 +435,20 @@ class _TvChannelState extends State<TvChannel> {
               ),
               Expanded(
                 child: hasLength
-                    ?  ValueListenableBuilder(
-                    valueListenable: _controller,
-                    builder: (context, VideoPlayerValue value, child) {
-                        return Slider(
-                            onChanged: (double value) {
-                              _controller.seekTo(Duration(seconds: (value * _controller.value.duration.inSeconds).round()));
-                            },
-                            value: _controller.value.position.inSeconds /
-                                _controller.value.duration.inSeconds);
-                      }
-                    )
+                    ? ValueListenableBuilder(
+                        valueListenable: _controller,
+                        builder: (context, VideoPlayerValue value, child) {
+                          return Slider(
+                              onChanged: (double value) {
+                                _controller.seekTo(Duration(
+                                    seconds: (value *
+                                            _controller
+                                                .value.duration.inSeconds)
+                                        .round()));
+                              },
+                              value: _controller.value.duration == null ? 0 : _controller.value.position.inSeconds /
+                                  _controller.value.duration.inSeconds);
+                        })
                     : Slider(
                         onChanged: (double value) {},
                         value: 0,
@@ -444,7 +460,9 @@ class _TvChannelState extends State<TvChannel> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  addToFavorite();
+                },
                 icon: Icon(Icons.favorite_border_outlined),
               ),
               hasLength
@@ -452,9 +470,9 @@ class _TvChannelState extends State<TvChannel> {
                       valueListenable: _controller,
                       builder: (context, VideoPlayerValue value, child) {
                         return Text(
-                          _printDuration(_controller.value.position) +
+                         _controller.value.duration == null ? "" : (_printDuration(_controller.value.position) +
                               " / " +
-                              _printDuration(_controller.value.duration),
+                              _printDuration(_controller.value.duration)),
                         );
                       },
                     )
@@ -471,5 +489,63 @@ class _TvChannelState extends State<TvChannel> {
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
     return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+
+  void changeCategory() {
+    List<String> filters = ["all", "movie", "series", "live"];
+    showDialog(
+        context: context,
+        builder: (context) {
+          return Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(filters.length, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _setFilter(filters[index]);
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(12),
+                        width: 100,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: filters[index] == filterName ? Theme.of(context).accentColor : Colors.white),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(child: Text(filters[index])),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          );
+        });
+  }
+
+  Future<void> addToFavorite() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<MyM3UGenericEntry> entries = [];
+    for (var entry in jsonDecode(prefs.getString("favorites") ?? [])) {
+      entries.add(MyM3UGenericEntry.fromJson(entry));
+    }
+    if (entries
+            .where((element) =>
+                element.title == filteredLeftChannels[channelIndex].title)
+            .length ==
+        0) {
+      M3uGenericEntry channel = filteredLeftChannels[channelIndex];
+      entries.add(MyM3UGenericEntry(
+          title: channel.title,
+          link: channel.link,
+          logo: channel.attributes["tvg-logo"]));
+    }
+    print("kkkkkkkkkkkkkkkkkk" + jsonEncode(entries));
+    prefs.setString("favorites", jsonEncode(entries));
+    Toast.show("Added to Favorites", context);
   }
 }
