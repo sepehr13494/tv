@@ -23,7 +23,7 @@ class _TvCalenderState extends State<TvCalender> {
   List<TvDetails> tvProgramDetailsList=[];
   List<String> litems = [];
   String programsViewDate=DateFormat('yyyyMMdd').format(DateTime.now());
-  
+
 
 
   @override
@@ -189,8 +189,8 @@ class _TvCalenderState extends State<TvCalender> {
     for(var ch in tvObject.tv.channel){
       tvProgramDetailsList.add(TvDetails(channel: ch,programms: []));
       for(var pr in tvObject.tv.programme){
-          if(ch.id==pr.channel && programsViewDate==pr.start.substring(0,8)){
-          //if(ch.id==pr.channel ){
+          //if(ch.id==pr.channel && programsViewDate==pr.start.substring(0,8)){
+          if(ch.id==pr.channel ){
           tvProgramDetailsList.last.programms.add(pr);
         }
         else {
