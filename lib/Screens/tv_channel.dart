@@ -544,8 +544,10 @@ class _TvChannelState extends State<TvChannel> {
           link: channel.link,
           logo: channel.attributes["tvg-logo"]));
     }
-    print("kkkkkkkkkkkkkkkkkk" + jsonEncode(entries));
     prefs.setString("favorites", jsonEncode(entries));
+    setState(() {
+      topChannels[0].m3uGenericEntries.add(filteredLeftChannels[channelIndex]);
+    });
     Toast.show("Added to Favorites", context);
   }
 }

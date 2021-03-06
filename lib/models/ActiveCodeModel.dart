@@ -15,11 +15,11 @@ class ActiveCodeObj {
   });
 
   String status;
-  Response response;
+  ActiveCodeResponse response;
 
   factory ActiveCodeObj.fromJson(Map<String, dynamic> json) => ActiveCodeObj(
     status: json["Status"],
-    response: Response.fromJson(json["Response"]),
+    response: ActiveCodeResponse.fromJson(json["Response"]),
   );
 
   Map<String, dynamic> toJson() => {
@@ -28,8 +28,8 @@ class ActiveCodeObj {
   };
 }
 
-class Response {
-  Response({
+class ActiveCodeResponse {
+  ActiveCodeResponse({
     this.message,
     this.m3UUrl,
     this.epgLink,
@@ -39,6 +39,7 @@ class Response {
     this.codeStatus,
     this.codeType,
     this.note,
+    this.code,
   });
 
   String message;
@@ -50,8 +51,9 @@ class Response {
   String codeStatus;
   String codeType;
   String note;
+  String code;
 
-  factory Response.fromJson(Map<String, dynamic> json) => Response(
+  factory ActiveCodeResponse.fromJson(Map<String, dynamic> json) => ActiveCodeResponse(
     message: json["message"],
     m3UUrl: json["m3u_url"],
     epgLink: json["epg_link"],
@@ -61,6 +63,7 @@ class Response {
     codeStatus: json["code_status"],
     codeType: json["code_type"],
     note: json["note"],
+    code: json["code"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -73,5 +76,6 @@ class Response {
     "code_status": codeStatus,
     "code_type": codeType,
     "note": note,
+    "code": code,
   };
 }
