@@ -40,23 +40,14 @@ class _TvChannelState extends State<TvChannel> {
   String upperChannel;
   List<TopChannel> topChannels;
   List<M3uGenericEntry> filteredLeftChannels;
+  List<M3uGenericEntry> lockChannels;
   String filterName = "all";
 
   Future getChannels() async {
     final response = await Dio().get(widget.url);
     m3u = await M3uParser.parse(response.data);
-    List<M3uGenericEntry> favorites = [];
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<MyM3UGenericEntry> entries = [];
-    for (var entry in jsonDecode(prefs.getString("favorites") ?? [])) {
-      entries.add(MyM3UGenericEntry.fromJson(entry));
-    }
-    for (var entry in entries) {
-      favorites.add(
-          M3uGenericEntry(title: entry.title, link: entry.link, attributes: {
-        "tvg-logo": entry.logo,
-      }));
-    }
+    var favorites = await addFavoritesToChannels();
+    lockChannels = await addLocksToChannels();
     topChannels = [
       TopChannel(name: "favorite", m3uGenericEntries: favorites),
       TopChannel(name: "AllChannels", m3uGenericEntries: m3u)
@@ -105,10 +96,23 @@ class _TvChannelState extends State<TvChannel> {
         }));
         break;
     }
-    setState(() {
-      channelIndex = 0;
-    });
-    initVideo(filteredLeftChannels[0].link);
+
+    if (lockChannels.where((element) => element.title == filteredLeftChannels[0].title).length == 0) {
+      initVideo(filteredLeftChannels[0].link);
+      setState(() {
+        channelIndex = 0;
+      });
+    }  else{
+      setState(() {
+        channelIndex = -1;
+      });
+      checkLock(function: (){
+        initVideo(filteredLeftChannels[0].link);
+        setState(() {
+          channelIndex = 0;
+        });
+      });
+    }
   }
 
   void _setTopChannel(int index) {
@@ -200,7 +204,7 @@ class _TvChannelState extends State<TvChannel> {
                   child: Align(
                     alignment: Alignment.topRight,
                     child: Container(
-                      width: MediaQuery.of(context).size.width * 0.3,
+                      width: MediaQuery.of(context).size.width * 0.4,
                       height: MediaQuery.of(context).size.height,
                       padding: EdgeInsets.only(top: 70),
                       color: Colors.grey[900].withOpacity(0.8),
@@ -298,10 +302,19 @@ class _TvChannelState extends State<TvChannel> {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () {
-        initVideo(channel.link);
-        setState(() {
-          channelIndex = index;
-        });
+        if (lockChannels.where((element) => element.title == channel.title).length == 0) {
+          initVideo(channel.link);
+          setState(() {
+            channelIndex = index;
+          });
+        }else{
+          checkLock(function: (){
+            initVideo(channel.link);
+            setState(() {
+              channelIndex = index;
+            });
+          });
+        }
       },
       child: Container(
         padding: EdgeInsets.only(left: 15, right: 5, top: 5, bottom: 5),
@@ -350,12 +363,14 @@ class _TvChannelState extends State<TvChannel> {
         List<String> options = [
           "Change Category",
           "Code Management",
-          "TV Guid"
+          //"TV Guid",
+          "Change Password",
         ];
         List<IconData> icons = [
           Icons.category,
           Icons.account_tree_outlined,
-          Icons.list_alt
+          //Icons.list_alt,
+          Icons.lock_open_rounded,
         ];
         return GestureDetector(
           onTap: () {
@@ -365,11 +380,16 @@ class _TvChannelState extends State<TvChannel> {
                 break;
               case 1:
                 break;
-              case 2:
+              /*case 2:
                 Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => TvCalender(link: widget.xml)));
+                break;*/
+              case 2:
+                checkLock(function: (){
+                  setNewPassWord();
+                });
                 break;
             }
           },
@@ -386,9 +406,9 @@ class _TvChannelState extends State<TvChannel> {
   }
 
   Widget buttomController() {
+    List<M3uGenericEntry> favorites = topChannels[0].m3uGenericEntries;
     M3uGenericEntry channel = filteredLeftChannels[channelIndex];
-    bool hasLength =
-        (channel.link.contains("/movie/") || channel.link.contains("/series/"));
+    bool hasLength = (channel.link.contains("/movie/") || channel.link.contains("/series/"));
     return Container(
       color: Colors.black45,
       padding: EdgeInsets.all(15),
@@ -459,11 +479,21 @@ class _TvChannelState extends State<TvChannel> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                onPressed: () {
-                  addToFavorite();
-                },
-                icon: Icon(Icons.favorite_border_outlined),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      addToFavorite();
+                    },
+                    icon: (favorites.where((element) => element.title == channel.title).length == 0) ? Icon(Icons.favorite_border_outlined) : Icon(Icons.favorite),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      addToLock();
+                    },
+                    icon: (lockChannels.where((element) => element.title == channel.title).length == 0) ? Icon(Icons.lock_open_rounded) : Icon(Icons.lock),
+                  ),
+                ],
               ),
               hasLength
                   ? ValueListenableBuilder(
@@ -530,7 +560,7 @@ class _TvChannelState extends State<TvChannel> {
   Future<void> addToFavorite() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<MyM3UGenericEntry> entries = [];
-    for (var entry in jsonDecode(prefs.getString("favorites") ?? [])) {
+    for (var entry in jsonDecode(prefs.getString("favorites") ?? "[]")) {
       entries.add(MyM3UGenericEntry.fromJson(entry));
     }
     if (entries
@@ -543,11 +573,154 @@ class _TvChannelState extends State<TvChannel> {
           title: channel.title,
           link: channel.link,
           logo: channel.attributes["tvg-logo"]));
+      setState(() {
+        topChannels[0].m3uGenericEntries.add(filteredLeftChannels[channelIndex]);
+      });
+    }else{
+      entries.removeWhere((element) => element.title == filteredLeftChannels[channelIndex].title);
+      setState(() {
+        topChannels[0].m3uGenericEntries.removeWhere((element) => element.title == filteredLeftChannels[channelIndex].title);
+      });
     }
     prefs.setString("favorites", jsonEncode(entries));
-    setState(() {
-      topChannels[0].m3uGenericEntries.add(filteredLeftChannels[channelIndex]);
+  }
+
+  Future<void> addToLock() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<MyM3UGenericEntry> entries = [];
+    for (var entry in jsonDecode(prefs.getString("locks") ?? "[]")) {
+      entries.add(MyM3UGenericEntry.fromJson(entry));
+    }
+    if (entries.where((element) => element.title == filteredLeftChannels[channelIndex].title).length == 0) {
+      M3uGenericEntry channel = filteredLeftChannels[channelIndex];
+      entries.add(MyM3UGenericEntry(
+          title: channel.title,
+          link: channel.link,
+          logo: channel.attributes["tvg-logo"]));
+      setState(() {
+        lockChannels.add(filteredLeftChannels[channelIndex]);
+      });
+      prefs.setString("locks", jsonEncode(entries));
+    }else{
+      checkLock(function: (){
+        entries.removeWhere((element) => element.title == filteredLeftChannels[channelIndex].title);
+        setState(() {
+          lockChannels.removeWhere((element) => element.title == filteredLeftChannels[channelIndex].title);
+        });
+        prefs.setString("locks", jsonEncode(entries));
+      });
+    }
+  }
+
+  Future<List<M3uGenericEntry>> addFavoritesToChannels() async {
+    List<M3uGenericEntry> favorites = [];
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<MyM3UGenericEntry> entries = [];
+    for (var entry in jsonDecode(prefs.getString("favorites") ?? "[]")) {
+      entries.add(MyM3UGenericEntry.fromJson(entry));
+    }
+    for (var entry in entries) {
+      favorites.add(
+          M3uGenericEntry(title: entry.title, link: entry.link, attributes: {
+            "tvg-logo": entry.logo,
+          }));
+    }
+    return favorites;
+  }
+
+  Future<List<M3uGenericEntry>> addLocksToChannels() async {
+    List<M3uGenericEntry> locks = [];
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<MyM3UGenericEntry> entries = [];
+    for (var entry in jsonDecode(prefs.getString("locks") ?? "[]")) {
+      entries.add(MyM3UGenericEntry.fromJson(entry));
+    }
+    for (var entry in entries) {
+      locks.add(
+          M3uGenericEntry(title: entry.title, link: entry.link, attributes: {
+            "tvg-logo": entry.logo,
+          }));
+    }
+    return locks;
+  }
+
+  Future<bool> checkPassword(String text) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if ((prefs.getString("password")??"0000") == text) {
+      return true;
+    } else{
+      return false;
+    }
+
+  }
+
+  void checkLock({Function function}) {
+    showDialog(context: context, builder: (context){
+      TextEditingController controller = TextEditingController();
+      return Dialog(
+        child: SizedBox(
+          width: 200,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Enter Password"),
+                  SizedBox(height: 15),
+                  TextField(
+                    textAlign: TextAlign.center,
+                    controller: controller,
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton(onPressed: () async {
+                    bool correctPass = await checkPassword(controller.text);
+                    if (correctPass) {
+                      Navigator.pop(context);
+                      function();
+                    }else{
+                      Toast.show("Wrong Password", context);
+                    }
+                  }, child: Text("Confirm"))
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
     });
-    Toast.show("Added to Favorites", context);
+  }
+
+  void setNewPassWord() {
+    showDialog(context: context, builder: (context){
+      TextEditingController controller = TextEditingController();
+      return Dialog(
+        child: SizedBox(
+          width: 200,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Enter New Password"),
+                  SizedBox(height: 15),
+                  TextField(
+                    textAlign: TextAlign.center,
+                    controller: controller,
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton(onPressed: () async {
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    prefs.setString("password", controller.text);
+                    Navigator.pop(context);
+                  }, child: Text("Confirm"))
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
   }
 }

@@ -3,11 +3,11 @@ import 'dart:developer';
 import 'package:intl/intl.dart';
 import 'package:tv/models/tvobject.dart';
 import 'package:tv/models/tvDetails.dart';
-import 'package:dio/dio.dart';
+//import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:xml/xml.dart';
 import 'package:xml2json/xml2json.dart';
-//import 'package:http/http.dart';
+import 'package:http/http.dart' as http;
 
 class TvCalender extends StatefulWidget {
   final String link;
@@ -31,8 +31,8 @@ class _TvCalenderState extends State<TvCalender> {
     //print(DateTime.parse("20210305013500 +0000"));
     print("dsds");
     fetchUrl();
-    result(tvObject);
-    _function();
+    /*result(tvObject);
+    _function();*/
     super.initState();
   }
 
@@ -49,12 +49,17 @@ class _TvCalenderState extends State<TvCalender> {
               Container(
                 child: Row(
                   children: [
-                    Container(
-                      margin: EdgeInsets.all(10),
-                      alignment: Alignment.bottomLeft,
-                      color: Colors.grey.withOpacity(0.3),
-                      width: 150,
-                      height: 100,
+                    GestureDetector(
+                      onTap: (){
+                        tvObject = tvObjectFromJson(myString.replaceAll(r'\', ""));
+                      },
+                      child: Container(
+                        margin: EdgeInsets.all(10),
+                        alignment: Alignment.bottomLeft,
+                        color: Colors.grey.withOpacity(0.3),
+                        width: 150,
+                        height: 100,
+                      ),
                     ),
                     Container(
                       child: Text('No information'),
@@ -174,7 +179,7 @@ class _TvCalenderState extends State<TvCalender> {
       ),
     );
   }
-
+/*
   Future<void> _function() async {
     Response response = await Dio().get(widget.link);
     final document = XmlDocument.parse(response.data);
@@ -197,11 +202,15 @@ class _TvCalenderState extends State<TvCalender> {
         }
       }
     }
-  }
+  }*/
+
+  String myString;
 
   void fetchUrl() async{
+    print("salam");
+    print(widget.link);
     final Xml2Json xml2Json = Xml2Json();
-    var xmlString1 = '''<tv generator-info-name="More-TV" generator-info-url="http://client.more-itv.com:8080/">
+    /*var xmlString1 = '''<tv generator-info-name="More-TV" generator-info-url="http://client.more-itv.com:8080/">
     <channel id="zdfinfo.de">
 <display-name>### ۩ Bein Sports ۩ ### </display-name>
 </channel>
@@ -321,13 +330,14 @@ class _TvCalenderState extends State<TvCalender> {
 <title>Inui6</title>
 <desc>eizoen 1 - Aflevering 21 van 26 - Verstoppertje in de sneeuw - KRO-NCRV Na een flinke sneeuwstorm gaat Inui op pad om haar vrienden te zoeken. Die zijn door de storm bedekt met een dikke laag sneeuw, dus Inui ziet ze niet. Dat zorgt natuurlijk voor een hoop pret. Onze nieuwe app is nu al te testen! Download hem op apps.gids.tv Inui op tv . CAST:Kathy Wauwgh, Peter van Gucht, Walter Baele, Britt Van Der Borght, , Mat Den Boer</desc>
 </programme>
-    </tv>''';
-     //final xmlString = await http.get("http://zaltv.ddnsco.com:8080/xmltv.php?username=mene77&password=foiksiota");
-     //xml2Json.parse(utf8.decode(xmlString.bodyBytes));
-    xml2Json.parse(xmlString1);
+    </tv>''';*/
+     final xmlString = await http.get(widget.link);
+     xml2Json.parse(utf8.decode(xmlString.bodyBytes));
+    //xml2Json.parse(xmlString1);
     var jsonString = xml2Json.toGData();
-    tvObject = tvObjectFromJson(jsonString);
-    print(tvObject.tv.channel[0].icon.src);
+    myString = jsonString;
+    tvObject = tvObjectFromJson(jsonString.replaceAll(r'\', ""));
+    print(tvObject.tv.channel[0].displayName);
     for(var i in tvObject.tv.channel){
       List<String> displayNameList=[];
       int count=0;

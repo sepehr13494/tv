@@ -123,13 +123,15 @@ class Programme {
   DisplayName title;
   DisplayName desc;
 
-  factory Programme.fromJson(Map<String, dynamic> json) => Programme(
-    start: json["start"],
-    stop: json["stop"],
-    channel: json["channel"],
-    title: DisplayName.fromJson(json["title"]),
-    desc: DisplayName.fromJson(json["desc"]),
-  );
+  factory Programme.fromJson(Map<String, dynamic> json) {
+    return Programme(
+      start: json["start"],
+      stop: json["stop"],
+      channel: json["channel"],
+      title: DisplayName.fromJson(json["title"]),
+      desc: DisplayName.fromJson(json["desc"]),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     "start": start,

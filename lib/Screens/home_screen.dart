@@ -137,14 +137,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (context) => TvChannel(
                     url: activeCodeObj.response.m3UUrl,
                     xml: activeCodeObj.response.epgLink)));
+      }else{
+        setState(() {
+          hasCode = false;
+        });
       }
+    }else{
+      setState(() {
+        hasCode = false;
+      });
     }
   }
 
   Future<void> addToCode({ActiveCodeResponse response}) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<ActiveCodeResponse> entries = [];
-    for (var entry in jsonDecode(prefs.getString("codeList") ?? [])) {
+    for (var entry in jsonDecode(prefs.getString("codeList") ?? "[]")) {
       entries.add(ActiveCodeResponse.fromJson(entry));
     }
     if (entries.where((element) => element.code == response.code).length == 0) {
@@ -155,8 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> checkExistCode() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String code = prefs.getString("code");
-    if (code != null) {
+    String code = prefs.getString("code")??"";
+    if (code != "") {
       setState(() {
         hasCode = true;
         activeCode = code;
