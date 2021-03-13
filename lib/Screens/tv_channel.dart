@@ -44,7 +44,12 @@ class _TvChannelState extends State<TvChannel> {
   String filterName = "all";
 
   Future getChannels() async {
-    final response = await Dio().get(widget.url);
+    var response;
+    try{
+      response = await Dio().get(widget.url);
+    }catch (e){
+      print(e.toString());
+    }
     m3u = await M3uParser.parse(response.data);
     var favorites = await addFavoritesToChannels();
     lockChannels = await addLocksToChannels();
@@ -125,6 +130,7 @@ class _TvChannelState extends State<TvChannel> {
   }
 
   Future<void> initVideo(url) async {
+    print("kkkkkkkkkk"+url);
     if (_controller != null) {
       setState(() {
         _controller.pause();
@@ -362,14 +368,12 @@ class _TvChannelState extends State<TvChannel> {
       children: List.generate(3, (index) {
         List<String> options = [
           "Change Category",
-          "Code Management",
-          //"TV Guid",
+          "TV Guid",
           "Change Password",
         ];
         List<IconData> icons = [
           Icons.category,
-          Icons.account_tree_outlined,
-          //Icons.list_alt,
+          Icons.list_alt,
           Icons.lock_open_rounded,
         ];
         return GestureDetector(
@@ -379,13 +383,11 @@ class _TvChannelState extends State<TvChannel> {
                 changeCategory();
                 break;
               case 1:
-                break;
-              /*case 2:
                 Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => TvCalender(link: widget.xml)));
-                break;*/
+                break;
               case 2:
                 checkLock(function: (){
                   setNewPassWord();

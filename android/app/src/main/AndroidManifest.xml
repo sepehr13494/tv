@@ -3,8 +3,9 @@
 
     <uses-permission android:name="android.permission.INTERNET"/>
    <application
-        android:label="tv"
-        android:icon="@mipmap/ic_launcher">
+        android:usesCleartextTraffic="true"
+        android:label="ZalTV.CO"
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

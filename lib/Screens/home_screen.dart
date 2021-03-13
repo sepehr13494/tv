@@ -33,15 +33,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: hasCode
           ? Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("code : " + activeCode),
-            SizedBox(height: 20),
-            CircularProgressIndicator.adaptive(),
-          ],
-        ),
-      )
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("code : " + activeCode),
+                  SizedBox(height: 20),
+                  CircularProgressIndicator.adaptive(),
+                ],
+              ),
+            )
           : SingleChildScrollView(
               child: Container(
                 width: MediaQuery.of(context).size.width,
@@ -54,14 +54,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            "World TV",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 40,
-                                fontWeight: FontWeight.bold),
+                          Image.asset(
+                            "assets/images/logo.jpg",
+                            width: 100,
                           ),
-                          SizedBox(height: 10),
                           ClipRRect(
                             borderRadius: BorderRadius.all(Radius.circular(8)),
                             child: Container(
@@ -106,6 +102,64 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
+                          SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: () async {
+                              SharedPreferences prefs = await SharedPreferences.getInstance();
+                              List<ActiveCodeResponse> entries = [];
+                              for (var entry in jsonDecode(
+                                  prefs.getString("codeList") ?? "[]")) {
+                                entries.add(ActiveCodeResponse.fromJson(entry));
+                              }
+                              showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return Dialog(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(20),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: List.generate(
+                                              entries.length, (index) {
+                                            return Padding(
+                                              padding:
+                                                  const EdgeInsets.all(10.0),
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  Navigator.pop(context);
+                                                  setState(() {
+                                                    _controller.text = entries[index].code;
+                                                  });
+                                                },
+                                                child: Container(
+                                                  width: 300,
+                                                  padding: EdgeInsets.all(12),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(color: Colors.white)
+                                                  ),
+                                                  child: Center(
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        Text(entries[index].code),
+                                                        SizedBox(width: 50,),
+                                                        Text("exp: " + entries[index].expirationDate.toString().split(" ")[0])
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                        ),
+                                      ),
+                                    );
+                                  });
+                            },
+                            child: Text("My Codes"),
+                          )
                         ],
                       ),
                     ),
@@ -128,21 +182,21 @@ class _HomeScreenState extends State<HomeScreen> {
     if (activeCodeObj.response.message == "Success") {
       if (activeCodeObj.response.codeStatus == "Active") {
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        activeCodeObj.response.code = _controller.text;
+        activeCodeObj.response.code = code;
         prefs.setString("code", activeCodeObj.response.code);
         addToCode(response: activeCodeObj.response);
-        Navigator.push(
+        Navigator.pushReplacement(
             context,
             MaterialPageRoute(
                 builder: (context) => TvChannel(
                     url: activeCodeObj.response.m3UUrl,
                     xml: activeCodeObj.response.epgLink)));
-      }else{
+      } else {
         setState(() {
           hasCode = false;
         });
       }
-    }else{
+    } else {
       setState(() {
         hasCode = false;
       });
@@ -163,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> checkExistCode() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String code = prefs.getString("code")??"";
+    String code = prefs.getString("code") ?? "";
     if (code != "") {
       setState(() {
         hasCode = true;
@@ -171,5 +225,6 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       checkCode(code);
     }
+    print(code);
   }
 }
