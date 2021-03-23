@@ -13,8 +13,9 @@ import 'package:xml/xml.dart';
 
 class TvCalender extends StatefulWidget {
   final String link;
+  final List<String> channels;
 
-  const TvCalender({Key key, this.link}) : super(key: key);
+  const TvCalender({Key key, this.link, this.channels}) : super(key: key);
 
   @override
   _TvCalenderState createState() => _TvCalenderState();
@@ -66,20 +67,11 @@ class _TvCalenderState extends State<TvCalender> {
     _scrollController.dispose();
     super.dispose();
   }
-  // showDialog(
-  // context: context,
-  // builder: (BuildContext context) {
-  // return AlertDialog(content: Container(padding: EdgeInsets.all(10),
-  // width: 10000,height: 10000,
-  // child: Center(child: Container(width: 25,height: 25,child: CircularProgressIndicator(),),)
-  // ),);
-  // }
-  // )
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: Colors.grey.withOpacity(0.25),
-        body: Column(
+        body: document1 == null ? Center(child: CircularProgressIndicator.adaptive()) : Column(
           children: [
             Container(
               child: Row(
@@ -406,7 +398,7 @@ class _TvCalenderState extends State<TvCalender> {
     );
   }
   Future<void> _function() async {
-    var response = await http.get("http://zaltv.ddnsco.com:8080/xmltv.php?username=mene77&password=foiksiota");
+    var response = await http.get(widget.link);
     document1 = XmlDocument.parse(utf8.decode(response.bodyBytes));
     print(document1.toString());
     //log(document.toXmlString(pretty: true,indent: '\t'));
@@ -418,7 +410,6 @@ class _TvCalenderState extends State<TvCalender> {
     initialResultForInput(document1);
     tvProgramDetailsListShow=tvProgramDetailsListToday;
     setState(() {
-
     });
   }
 
@@ -436,12 +427,14 @@ class _TvCalenderState extends State<TvCalender> {
     log(totalChannels.length.toString());
     for (var i = 0; i < xmlListChannels.length; i++) {
       var xmlvar=xmlListChannels[i];
-      String id = xmlvar.attributes.first.value;
-      print(id);
+      var sepehrXml = xmlvar.attributes.first;
       print(xmlvar.text);
-      if (id != "") {
-        ids.add(id);
-        channelGetfromIds.add(xmlvar.children.toList()[0].document.findAllElements('display-name').elementAt(i).text);
+      String channelName = xmlvar.text;
+      if (sepehrXml.value != "") {
+        if (widget.channels.contains(channelName)) {
+          ids.add(sepehrXml.value);
+          channelGetfromIds.add(channelName);
+        }
       }
       print(i);
     }
@@ -451,10 +444,16 @@ class _TvCalenderState extends State<TvCalender> {
     else{
       selectIds=ids;
     }
-    selectIds=ids.sublist(0,numbertOfView);
+    if (ids.length<= numbertOfView) {
+      selectIds = ids;
+    }  else{
+      selectIds=ids.sublist(0,numbertOfView);
+    }
+    if (selectIds.length>0) {
+      completeInput();
+      addListenerToController();
+    }
     print("dddddddddddddddddddddddddddddddd:        "+ids.length.toString());
-    completeInput();
-    addListenerToController();
   }
   addListenerToController(){
     print("dgfdgfdgfdgdgf");
@@ -495,18 +494,8 @@ class _TvCalenderState extends State<TvCalender> {
     // for(var i=0;i<xmlListChannels.length;i++){
   }
   completeInput() {
-    // if(isLoading){
-    //   showDialog(context: context,builder: (context) {
-    //     return Container(width: 10000,height: 10000,padding: EdgeInsets.all(2),
-    //     child: Center(child: Container(width: 25,height: 25,
-    //     child: AlertDialog(content: CircularProgressIndicator(),),
-    //     ),),
-    //     );
-    //   },);
-    // }
     print("ids length     :    "+ids.length.toString());
     for (var ii=0;ii<xmlListPrograms.length;ii++) {
-      // print("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq:    "+tvProgramDetailsList.length.toString());
       print(ii);
       if(selectIds.contains(xmlListPrograms[ii].attributes.toList()[2].value)){
         //if for data selected

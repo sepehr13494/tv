@@ -1,12 +1,16 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info/package_info.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toast/toast.dart';
 import 'package:tv/Screens/tv_channel.dart';
 import 'package:tv/models/ActiveCodeModel.dart';
+import 'package:tv/models/appvVersionObj.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -24,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
-    checkExistCode();
+    checkVersion();
     super.initState();
   }
 
@@ -68,10 +72,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Icon(Icons.info),
                                   SizedBox(width: 10),
-                                  Text(
-                                    "To find free activation code send messege in Telegram",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(fontSize: 10),
+                                  RichText(
+                                    text: new TextSpan(
+                                      children: [
+                                        new TextSpan(
+                                          text: 'To load your M3U playlist, create free activation code at ',
+                                          style: new TextStyle(fontSize: 10),
+                                        ),
+                                        new TextSpan(
+                                          text: 'zaltv.co',
+                                          style: new TextStyle(fontSize: 10,color: Colors.lightBlueAccent),
+                                          recognizer: new TapGestureRecognizer()
+                                            ..onTap = () {
+                                            launch('https://zaltv.co');
+                                            },
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -114,47 +131,65 @@ class _HomeScreenState extends State<HomeScreen> {
                               showDialog(
                                   context: context,
                                   builder: (context) {
-                                    return Dialog(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(20),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: List.generate(
-                                              entries.length, (index) {
-                                            return Padding(
-                                              padding:
-                                                  const EdgeInsets.all(10.0),
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  Navigator.pop(context);
-                                                  setState(() {
-                                                    _controller.text = entries[index].code;
-                                                  });
-                                                },
-                                                child: Container(
-                                                  width: 300,
-                                                  padding: EdgeInsets.all(12),
-                                                  decoration: BoxDecoration(
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(color: Colors.white)
-                                                  ),
-                                                  child: Center(
-                                                    child: Row(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        Text(entries[index].code),
-                                                        SizedBox(width: 50,),
-                                                        Text("exp: " + entries[index].expirationDate.toString().split(" ")[0])
-                                                      ],
+                                    return StatefulBuilder(
+                                      builder: (context, innerSetState) {
+                                        return Dialog(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(20),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: List.generate(
+                                                  entries.length, (index) {
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(10.0),
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      Navigator.pop(context);
+                                                      setState(() {
+                                                        _controller.text = entries[index].code;
+                                                      });
+                                                    },
+                                                    child: Container(
+                                                      width: 300,
+                                                      padding: EdgeInsets.all(12),
+                                                      decoration: BoxDecoration(
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        border: Border.all(color: Colors.white)
+                                                      ),
+                                                      child: Center(
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                          children: [
+                                                            Text(entries[index].code),
+                                                            Spacer(),
+                                                            Row(
+                                                              children: [
+                                                                Text("exp: " + entries[index].expirationDate.toString().split(" ")[0]),
+                                                                SizedBox(width: 10),
+                                                                IconButton(
+                                                                  icon: Icon(Icons.delete),
+                                                                  onPressed: (){
+                                                                    innerSetState((){
+                                                                      entries.removeAt(index);
+                                                                      prefs.setString("codeList", jsonEncode(entries));
+                                                                    });
+                                                                  },
+                                                                )
+                                                              ],
+                                                            )
+                                                          ],
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                              ),
-                                            );
-                                          }),
-                                        ),
-                                      ),
+                                                );
+                                              }),
+                                            ),
+                                          ),
+                                        );
+                                      }
                                     );
                                   });
                             },
@@ -226,5 +261,42 @@ class _HomeScreenState extends State<HomeScreen> {
       checkCode(code);
     }
     print(code);
+  }
+
+  Future<void> checkVersion() async {
+    try{
+      var response = await Dio().post("https://zaltv.co/wp-json/user/app/update", data: {
+        "version": (await PackageInfo.fromPlatform()).version,
+      },options: Options(
+        validateStatus: (status){
+          return status<500;
+        }
+      ));
+      print(response.toString());
+      final appVersionObj = appVersionObjFromJson(response.toString());
+      if (appVersionObj.response.newVersion == (await PackageInfo.fromPlatform()).version) {
+        checkExistCode();
+      }else{
+        showDialog(context: context, builder: (context){
+          return Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(25.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("New Update Available. Please Update Your App"),
+                  SizedBox(height: 20),
+                  ElevatedButton(onPressed: (){
+                    launch(appVersionObj.response.newVersionUrl);
+                  }, child: Text("Go To Download Link"))
+                ],
+              ),
+            ),
+          );
+        });
+      }
+    }catch (e){
+      print(e.toString());
+    }
   }
 }
