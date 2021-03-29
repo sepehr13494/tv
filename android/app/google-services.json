@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "889207645379",
+    "project_id": "zaltv-92ba0",
+    "storage_bucket": "zaltv-92ba0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:889207645379:android:d2ef686abadf24eae7ae76",
+        "android_client_info": {
+          "package_name": "com.zal.tv"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "889207645379-4g1i3e07nidh3qjofv5641q9c068dak3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYd0qd3M-RY2WEGo-7lis3RQJ2w87zizc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "889207645379-4g1i3e07nidh3qjofv5641q9c068dak3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
