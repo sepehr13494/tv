@@ -14,6 +14,7 @@ import 'package:tv/Screens/tvCalender.dart';
 import 'package:tv/models/MyM3uGenericEntry.dart';
 import 'package:tv/models/topChannelModel.dart';
 import 'package:video_player/video_player.dart';
+import 'package:wakelock/wakelock.dart';
 
 class TvChannel extends StatefulWidget {
   final String url;
@@ -25,7 +26,7 @@ class TvChannel extends StatefulWidget {
   _TvChannelState createState() => _TvChannelState();
 }
 
-class _TvChannelState extends State<TvChannel> {
+class _TvChannelState extends State<TvChannel> with WidgetsBindingObserver{
   VideoPlayerController _controller;
 
   bool showMenu = true;
@@ -75,7 +76,7 @@ class _TvChannelState extends State<TvChannel> {
     lockChannels = await addLocksToChannels();
     topChannels = [
       TopChannel(name: "Favorite", m3uGenericEntries: favorites),
-      TopChannel(name: "All Channels", m3uGenericEntries: m3u)
+      TopChannel(name: "All", m3uGenericEntries: m3u)
     ];
     m3u.forEach((element) {
       if (topChannels
@@ -92,9 +93,9 @@ class _TvChannelState extends State<TvChannel> {
             .add(element);
       }
     });
-    topChannelName = "All Channels";
+    topChannelName = "All";
     leftChannels = topChannels
-        .firstWhere((element) => element.name == "All Channels")
+        .firstWhere((element) => element.name == "All")
         .m3uGenericEntries;
     _setFilter(filterName);
   }
@@ -130,16 +131,16 @@ class _TvChannelState extends State<TvChannel> {
         0) {
       initVideo(filteredLeftChannels[0].link);
       setState(() {
-        channelIndex = 0;
+        channelIndex = m3u.indexWhere((element) => element.title == filteredLeftChannels[0].title);
       });
     } else {
       setState(() {
-        channelIndex = -1;
+        channelIndex = -2;
       });
       checkLock(function: () {
         initVideo(filteredLeftChannels[0].link);
         setState(() {
-          channelIndex = 0;
+          channelIndex = m3u.indexWhere((element) => element.title == filteredLeftChannels[0].title);
         });
       });
     }
@@ -149,7 +150,6 @@ class _TvChannelState extends State<TvChannel> {
     setState(() {
       leftChannels = topChannels[index].m3uGenericEntries;
       topChannelName = topChannels[index].name;
-      channelIndex = 0;
       _setFilter(filterName);
     });
   }
@@ -182,7 +182,18 @@ class _TvChannelState extends State<TvChannel> {
     ]);
     SystemChrome.setEnabledSystemUIOverlays([]);
     getChannels();
+    Wakelock.enable();
     super.initState();
+  }
+
+  @override
+  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
+    print(state);
+    if (state == AppLifecycleState.resumed) {
+      SystemChrome.setEnabledSystemUIOverlays([]);
+      Wakelock.enable();
+    }
+    super.didChangeAppLifecycleState(state);
   }
 
   @override
@@ -270,8 +281,7 @@ class _TvChannelState extends State<TvChannel> {
                                 if (val.length == 0) {
                                   setState(() {
                                     searchedLeftChannels = [];
-                                    searchedLeftChannels
-                                        .addAll(filteredLeftChannels);
+                                    searchedLeftChannels.addAll(filteredLeftChannels);
                                   });
                                 } else {
                                   setState(() {
@@ -294,8 +304,7 @@ class _TvChannelState extends State<TvChannel> {
                                     itemBuilder: (context, index) {
                                       return channels(
                                           channel: searchedLeftChannels[index],
-                                          index: m3u.indexOf(
-                                              searchedLeftChannels[index]));
+                                          index: topChannelName == "Favorite" ? m3u.indexWhere((element) => element.title == searchedLeftChannels[index].title) : m3u.indexOf(searchedLeftChannels[index]));
                                     },
                                   ),
                           ),
@@ -751,10 +760,13 @@ class _TvChannelState extends State<TvChannel> {
       entries.add(MyM3UGenericEntry.fromJson(entry));
     }
     for (var entry in entries) {
-      favorites.add(
-          M3uGenericEntry(title: entry.title, link: entry.link, attributes: {
-        "tvg-logo": entry.logo,
-      }));
+      if (m3u.where((element) => element.title == entry.title).length != 0) {
+        favorites.add(
+            M3uGenericEntry(title: entry.title, link: entry.link, attributes: {
+              "tvg-logo": entry.logo,
+            }));
+      }
+
     }
     return favorites;
   }

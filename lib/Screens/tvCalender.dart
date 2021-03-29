@@ -71,7 +71,7 @@ class _TvCalenderState extends State<TvCalender> {
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: Colors.grey.withOpacity(0.25),
-        body: document1 == null ? Center(child: CircularProgressIndicator.adaptive()) : Column(
+        body: (widget.link == null || widget.link == "") ? Center(child: Text("TV guide is not available for this code"),) : document1 == null ? Center(child: CircularProgressIndicator.adaptive()) : Column(
           children: [
             Container(
               child: Row(

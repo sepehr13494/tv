@@ -277,6 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (appVersionObj.response.newVersion == (await PackageInfo.fromPlatform()).version) {
         checkExistCode();
       }else{
+        checkExistCode();
         showDialog(context: context, builder: (context){
           return Dialog(
             child: Padding(

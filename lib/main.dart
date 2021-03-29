@@ -1,3 +1,5 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_analytics/observer.dart';
 import 'package:flutter/material.dart';
 import 'package:tv/Screens/home_screen.dart';
 import 'package:tv/Screens/tv_channel.dart';
@@ -5,11 +7,15 @@ import 'package:tv/Screens/tv_channel.dart';
 void main() => runApp(WorldTv());
 
 class WorldTv extends StatelessWidget {
+  final FirebaseAnalytics analytics = FirebaseAnalytics();
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: analytics),
+      ],
+      title: 'ZalTV.CO',
       theme: ThemeData(
           brightness: Brightness.dark,
           backgroundColor: Colors.black,
